@@ -1,0 +1,9 @@
+{
+	"id": "switch-next-week",
+	"name": "Switch Next Week",
+	"version": "0.1.0",
+	"minAppVersion": "1.5.0",
+	"description": "Weekly task planning: finalize current week, balance tasks, create next week from template and backlog",
+	"author": "Stac",
+	"isDesktopOnly": false
+}

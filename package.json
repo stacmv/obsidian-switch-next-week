@@ -1,0 +1,27 @@
+{
+	"name": "obsidian-switch-next-week",
+	"version": "0.1.0",
+	"description": "Obsidian plugin: weekly task planning via switch-next-week",
+	"main": "main.js",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "node esbuild.config.mjs production",
+		"lint": "eslint src/",
+		"lint:fix": "eslint src/ --fix",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"dependencies": {
+		"switch-next-week": "file:../switch-next-week",
+		"path-browserify": "^1.0.0"
+	},
+	"devDependencies": {
+		"@types/node": "^20.0.0",
+		"@typescript-eslint/eslint-plugin": "^7.0.0",
+		"@typescript-eslint/parser": "^7.0.0",
+		"esbuild": "^0.21.0",
+		"obsidian": "^1.5.0",
+		"typescript": "^5.4.0",
+		"vitest": "^1.6.0"
+	}
+}
