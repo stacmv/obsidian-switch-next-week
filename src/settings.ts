@@ -21,54 +21,85 @@ export const DEFAULT_SETTINGS: SwitchNextWeekSettings = {
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+/** Returns null if valid, or an error message string. */
+export function validateSettings(s: SwitchNextWeekSettings): string | null {
+	if (!s.weeksDir.trim()) return "Weeks folder cannot be empty.";
+	if (!s.templateFile.trim()) return "Template file cannot be empty.";
+	if (!s.backlogFile.trim()) return "Backlog file cannot be empty.";
+	if (!Number.isInteger(s.weekEndHour) || s.weekEndHour < 0 || s.weekEndHour > 23)
+		return "Week end hour must be an integer between 0 and 23.";
+	return null;
+}
+
 export class SwitchNextWeekSettingTab extends PluginSettingTab {
 	plugin: SwitchNextWeekPlugin;
+	private errorEl: HTMLElement | null = null;
 
 	constructor(app: App, plugin: SwitchNextWeekPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
+	private showError(msg: string | null): void {
+		if (!this.errorEl) return;
+		if (msg) {
+			this.errorEl.setText("⚠ " + msg);
+			this.errorEl.style.display = "block";
+		} else {
+			this.errorEl.style.display = "none";
+		}
+	}
+
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
 
+		// Validation error banner (hidden by default)
+		this.errorEl = containerEl.createEl("p", { cls: "snw-settings-error" });
+		this.errorEl.style.display = "none";
+
+		const saveValidated = async () => {
+			const err = validateSettings(this.plugin.settings);
+			this.showError(err);
+			if (!err) await this.plugin.saveSettings();
+		};
+
 		new Setting(containerEl)
 			.setName("Weeks folder")
-			.setDesc("Vault folder containing week files (e.g. weeks)")
+			.setDesc("Vault folder containing week files (e.g. @Weekly)")
 			.addText((text) =>
 				text
 					.setPlaceholder("weeks")
 					.setValue(this.plugin.settings.weeksDir)
 					.onChange(async (value) => {
-						this.plugin.settings.weeksDir = value.trim() || "weeks";
-						await this.plugin.saveSettings();
+						this.plugin.settings.weeksDir = value.trim();
+						await saveValidated();
 					})
 			);
 
 		new Setting(containerEl)
 			.setName("Template file")
-			.setDesc("Filename for recurring weekly tasks (default: template.md)")
+			.setDesc("Path within weeks folder for recurring tasks (e.g. templates/template.md)")
 			.addText((text) =>
 				text
 					.setPlaceholder("template.md")
 					.setValue(this.plugin.settings.templateFile)
 					.onChange(async (value) => {
-						this.plugin.settings.templateFile = value.trim() || "template.md";
-						await this.plugin.saveSettings();
+						this.plugin.settings.templateFile = value.trim();
+						await saveValidated();
 					})
 			);
 
 		new Setting(containerEl)
 			.setName("Backlog file")
-			.setDesc("Filename for one-time task backlog (default: backlog.md)")
+			.setDesc("Path within weeks folder for one-time task backlog (e.g. backlog.md)")
 			.addText((text) =>
 				text
 					.setPlaceholder("backlog.md")
 					.setValue(this.plugin.settings.backlogFile)
 					.onChange(async (value) => {
-						this.plugin.settings.backlogFile = value.trim() || "backlog.md";
-						await this.plugin.saveSettings();
+						this.plugin.settings.backlogFile = value.trim();
+						await saveValidated();
 					})
 			);
 
@@ -80,25 +111,24 @@ export class SwitchNextWeekSettingTab extends PluginSettingTab {
 				dropdown.setValue(String(this.plugin.settings.weekEndDay));
 				dropdown.onChange(async (value) => {
 					this.plugin.settings.weekEndDay = parseInt(value, 10);
-					await this.plugin.saveSettings();
+					await saveValidated();
 				});
 			});
 
 		new Setting(containerEl)
 			.setName("Week end hour")
 			.setDesc("Hour (0–23) at which the week ends on the configured day")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder("20")
 					.setValue(String(this.plugin.settings.weekEndHour))
 					.onChange(async (value) => {
 						const h = parseInt(value, 10);
-						if (!isNaN(h) && h >= 0 && h <= 23) {
-							this.plugin.settings.weekEndHour = h;
-							await this.plugin.saveSettings();
-						}
-					})
-			);
+						this.plugin.settings.weekEndHour = isNaN(h) ? -1 : h;
+						await saveValidated();
+					});
+				text.inputEl.style.width = "60px";
+			});
 
 		new Setting(containerEl)
 			.setName("Open week file after run")

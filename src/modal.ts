@@ -8,6 +8,8 @@ export interface WeekProtocolResult {
 	error?: string;
 }
 
+const YEAR_TRANSITION_MARKER = "YEAR TRANSITION REQUIRED";
+
 export class WeekProtocolModal extends Modal {
 	private result: WeekProtocolResult;
 	private onOpenFile: (() => void) | null;
@@ -21,46 +23,21 @@ export class WeekProtocolModal extends Modal {
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
+		contentEl.addClass("snw-modal");
 
 		contentEl.createEl("h2", { text: "Switch Next Week" });
 
-		// Status line
-		const statusEl = contentEl.createEl("p");
-		if (this.result.success) {
-			statusEl.setText("✓ Готово");
-			statusEl.style.color = "var(--color-green)";
+		const fullText = this.result.messages.join("\n");
+		const isYearMismatch = fullText.includes(YEAR_TRANSITION_MARKER);
+
+		if (isYearMismatch) {
+			this._renderYearMismatch(contentEl, fullText);
 		} else {
-			statusEl.setText("✗ Ошибка");
-			statusEl.style.color = "var(--color-red)";
-		}
-
-		// Messages block
-		if (this.result.messages.length > 0) {
-			const pre = contentEl.createEl("pre");
-			pre.setText(this.result.messages.join("\n"));
-			pre.style.whiteSpace = "pre-wrap";
-			pre.style.fontSize = "var(--font-smaller)";
-			pre.style.maxHeight = "300px";
-			pre.style.overflowY = "auto";
-			pre.style.padding = "8px";
-			pre.style.borderRadius = "4px";
-			pre.style.background = "var(--background-secondary)";
-		}
-
-		// Error detail
-		if (!this.result.success && this.result.error) {
-			const errEl = contentEl.createEl("p");
-			errEl.setText(this.result.error);
-			errEl.style.color = "var(--color-red)";
-			errEl.style.fontSize = "var(--font-smaller)";
+			this._renderNormal(contentEl);
 		}
 
 		// Buttons
-		const btnContainer = contentEl.createDiv({ cls: "modal-button-container" });
-		btnContainer.style.display = "flex";
-		btnContainer.style.justifyContent = "flex-end";
-		btnContainer.style.gap = "8px";
-		btnContainer.style.marginTop = "12px";
+		const btnContainer = contentEl.createDiv({ cls: "snw-modal-buttons" });
 
 		if (this.result.success && this.onOpenFile) {
 			const openBtn = btnContainer.createEl("button", {
@@ -79,5 +56,51 @@ export class WeekProtocolModal extends Modal {
 
 	onClose(): void {
 		this.contentEl.empty();
+	}
+
+	private _renderNormal(contentEl: HTMLElement): void {
+		// Status line
+		const statusEl = contentEl.createEl("p", { cls: "snw-status" });
+		if (this.result.success) {
+			statusEl.setText("✓ Готово");
+			statusEl.addClass("snw-status-ok");
+		} else {
+			statusEl.setText("✗ Ошибка");
+			statusEl.addClass("snw-status-error");
+		}
+
+		// Messages
+		if (this.result.messages.length > 0) {
+			const pre = contentEl.createEl("pre", { cls: "snw-messages" });
+			pre.setText(this.result.messages.join("\n"));
+		}
+	}
+
+	private _renderYearMismatch(contentEl: HTMLElement, fullText: string): void {
+		// Warning banner
+		const banner = contentEl.createDiv({ cls: "snw-year-banner" });
+		banner.createEl("strong", { text: "⚠ Требуется переход нового года" });
+
+		// Extract the year numbers from the message
+		const yearMatch = fullText.match(/from (\d{4}), but current year is (\d{4})/);
+		if (yearMatch) {
+			banner.createEl("p", {
+				text: `Найдены файлы из ${yearMatch[1]}, текущий год ${yearMatch[2]}.`,
+			});
+		}
+
+		banner.createEl("p", {
+			text: "Приложение работает с одним годом за раз. Архивируйте файлы предыдущего года.",
+		});
+
+		// Show instructions in a scrollable pre block
+		const pre = contentEl.createEl("pre", { cls: "snw-messages" });
+		// Extract just the INSTRUCTIONS section from the full text
+		const instructionsMatch = fullText.match(/INSTRUCTIONS:([\s\S]+)/);
+		if (instructionsMatch) {
+			pre.setText("INSTRUCTIONS:" + instructionsMatch[1].trimEnd());
+		} else {
+			pre.setText(fullText);
+		}
 	}
 }

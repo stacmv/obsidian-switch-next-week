@@ -1,5 +1,5 @@
 import { Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
-import { SwitchNextWeekSettings, DEFAULT_SETTINGS, SwitchNextWeekSettingTab } from "./settings";
+import { SwitchNextWeekSettings, DEFAULT_SETTINGS, SwitchNextWeekSettingTab, validateSettings } from "./settings";
 import { WeekProtocolModal } from "./modal";
 import { ObsidianVaultFileSystem } from "./vault-fs";
 
@@ -48,6 +48,11 @@ export default class SwitchNextWeekPlugin extends Plugin {
 	}
 
 	private async runProtocol() {
+		const validationError = validateSettings(this.settings);
+		if (validationError) {
+			new Notice(`Switch Next Week: ${validationError}`);
+			return;
+		}
 		if (this.running) {
 			new Notice("Switch Next Week: already running");
 			return;
