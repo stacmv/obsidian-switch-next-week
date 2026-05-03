@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-switch-next-week",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"description": "Obsidian plugin: weekly task planning via switch-next-week",
 	"main": "main.js",
 	"scripts": {
