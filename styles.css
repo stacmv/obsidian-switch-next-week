@@ -1,5 +1,10 @@
 /* Switch Next Week — plugin styles */
 
+.snw-modal {
+	-webkit-user-select: text;
+	user-select: text;
+}
+
 .snw-modal h2 {
 	margin-top: 0;
 }
@@ -19,7 +24,6 @@
 }
 
 .snw-messages {
-	user-select: text;
 	white-space: pre-wrap;
 	word-break: break-word;
 	font-size: var(--font-smaller);
