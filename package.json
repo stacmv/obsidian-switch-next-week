@@ -12,8 +12,8 @@
 		"test:watch": "vitest"
 	},
 	"dependencies": {
-		"switch-next-week": "file:../switch-next-week",
-		"path-browserify": "^1.0.0"
+		"path-browserify": "^1.0.0",
+		"switch-next-week": "file:../switch-next-week"
 	},
 	"devDependencies": {
 		"@types/node": "^20.0.0",
