@@ -39,6 +39,14 @@ export class WeekProtocolModal extends Modal {
 		// Buttons
 		const btnContainer = contentEl.createDiv({ cls: "snw-modal-buttons" });
 
+		const copyBtn = btnContainer.createEl("button", { text: "Копировать" });
+		copyBtn.addEventListener("click", () => {
+			navigator.clipboard.writeText(this.result.messages.join("\n")).then(() => {
+				copyBtn.setText("Скопировано ✓");
+				setTimeout(() => copyBtn.setText("Копировать"), 1500);
+			});
+		});
+
 		if (this.result.success && this.onOpenFile) {
 			const openBtn = btnContainer.createEl("button", {
 				text: "Открыть файл недели",
