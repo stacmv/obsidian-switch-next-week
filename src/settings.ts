@@ -1,5 +1,28 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { AbstractInputSuggest, App, PluginSettingTab, Setting, TFolder } from "obsidian";
 import type SwitchNextWeekPlugin from "./main";
+
+class FolderSuggest extends AbstractInputSuggest<TFolder> {
+	constructor(app: App, private inputEl: HTMLInputElement) {
+		super(app, inputEl);
+	}
+
+	getSuggestions(query: string): TFolder[] {
+		return this.app.vault
+			.getAllFolders(false)
+			.filter(f => f.path.toLowerCase().includes(query.toLowerCase()))
+			.sort((a, b) => a.path.localeCompare(b.path));
+	}
+
+	renderSuggestion(folder: TFolder, el: HTMLElement): void {
+		el.setText(folder.path);
+	}
+
+	selectSuggestion(folder: TFolder): void {
+		this.inputEl.value = folder.path;
+		this.inputEl.trigger("input");
+		this.close();
+	}
+}
 
 export interface SwitchNextWeekSettings {
 	weeksDir: string;
@@ -67,28 +90,30 @@ export class SwitchNextWeekSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Weeks folder")
 			.setDesc("Vault folder containing week files (e.g. @Weekly)")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder("weeks")
 					.setValue(this.plugin.settings.weeksDir)
 					.onChange(async (value) => {
 						this.plugin.settings.weeksDir = value.trim();
 						await saveValidated();
-					})
-			);
+					});
+				new FolderSuggest(this.app, text.inputEl);
+			});
 
 		new Setting(containerEl)
 			.setName("Templates folder")
 			.setDesc("Vault folder containing template.md, monthly.md, weekly.md, calendar.md, yearly.md")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder("templates")
 					.setValue(this.plugin.settings.templatesDir)
 					.onChange(async (value) => {
 						this.plugin.settings.templatesDir = value.trim();
 						await saveValidated();
-					})
-			);
+					});
+				new FolderSuggest(this.app, text.inputEl);
+			});
 
 		new Setting(containerEl)
 			.setName("Backlog file")
