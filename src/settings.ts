@@ -3,7 +3,7 @@ import type SwitchNextWeekPlugin from "./main";
 
 export interface SwitchNextWeekSettings {
 	weeksDir: string;
-	templateFile: string;
+	templatesDir: string;
 	backlogFile: string;
 	weekEndDay: number;   // 0=Sunday … 6=Saturday
 	weekEndHour: number;  // 0–23
@@ -12,7 +12,7 @@ export interface SwitchNextWeekSettings {
 
 export const DEFAULT_SETTINGS: SwitchNextWeekSettings = {
 	weeksDir: "weeks",
-	templateFile: "template.md",
+	templatesDir: "templates",
 	backlogFile: "backlog.md",
 	weekEndDay: 0,
 	weekEndHour: 20,
@@ -24,7 +24,7 @@ const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frid
 /** Returns null if valid, or an error message string. */
 export function validateSettings(s: SwitchNextWeekSettings): string | null {
 	if (!s.weeksDir.trim()) return "Weeks folder cannot be empty.";
-	if (!s.templateFile.trim()) return "Template file cannot be empty.";
+	if (!s.templatesDir.trim()) return "Templates folder cannot be empty.";
 	if (!s.backlogFile.trim()) return "Backlog file cannot be empty.";
 	if (!Number.isInteger(s.weekEndHour) || s.weekEndHour < 0 || s.weekEndHour > 23)
 		return "Week end hour must be an integer between 0 and 23.";
@@ -78,14 +78,14 @@ export class SwitchNextWeekSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Template file")
-			.setDesc("Path within weeks folder for recurring tasks (e.g. templates/template.md)")
+			.setName("Templates folder")
+			.setDesc("Vault folder containing template.md, monthly.md, weekly.md, calendar.md, yearly.md")
 			.addText((text) =>
 				text
-					.setPlaceholder("template.md")
-					.setValue(this.plugin.settings.templateFile)
+					.setPlaceholder("templates")
+					.setValue(this.plugin.settings.templatesDir)
 					.onChange(async (value) => {
-						this.plugin.settings.templateFile = value.trim();
+						this.plugin.settings.templatesDir = value.trim();
 						await saveValidated();
 					})
 			);

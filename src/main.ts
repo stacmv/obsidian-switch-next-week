@@ -35,11 +35,17 @@ export default class SwitchNextWeekPlugin extends Plugin {
 	private buildConfig() {
 		const s = this.settings;
 		const dir = s.weeksDir || ".";
-		const prefix = dir === "." ? "" : dir + "/";
+		const td = s.templatesDir || ".";
+		const wPrefix = dir === "." ? "" : dir + "/";
+		const tPrefix = td === "." ? "" : td + "/";
 		return new ConfigManager({
 			weeksDir: dir,
-			templateFile: prefix + s.templateFile,
-			backlogFile: prefix + s.backlogFile,
+			templateFile:  tPrefix + "template.md",
+			backlogFile:   wPrefix + s.backlogFile,
+			monthlyFile:   tPrefix + "monthly.md",
+			weeklyFile:    tPrefix + "weekly.md",
+			calendarFile:  tPrefix + "calendar.md",
+			yearlyFile:    tPrefix + "yearly.md",
 			weekEndDay: s.weekEndDay,
 			weekEndHour: s.weekEndHour,
 			reportAutoGenerate: false, // reports.js uses fs.readFileSync — incompatible with browser
