@@ -52,7 +52,6 @@ vitest.config.mts  # Test config (obsidian → test/obsidian-mock.ts)
 - Async/await throughout; try-catch with `new Notice(...)` for user-facing errors
 - Settings validation is a pure function separate from the UI (`validateSettings()`)
 - `ObsidianVaultFileSystem implements IFileSystem` — adapter pattern for testability
-- UI strings are in **Russian** (modal buttons, status messages)
 - No Node.js-only APIs; `path` is polyfilled via `path-browserify`; `fs` is stubbed
 - CSS classes prefixed `.snw-` (e.g., `.snw-modal`, `.snw-status-ok`, `.snw-year-banner`)
 - Tests use mock-based unit testing against the vault adapter layer
