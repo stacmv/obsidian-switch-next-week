@@ -9,6 +9,7 @@ declare module "switch-next-week/lib" {
 			weeksDir?: string;
 			templateFile?: string;
 			backlogFile?: string;
+			spheresFile?: string;
 			weekEndDay?: number;
 			weekEndHour?: number;
 			reportAutoGenerate?: boolean;
@@ -20,6 +21,7 @@ declare module "switch-next-week/lib" {
 		getWeeksDir(): string;
 		getBacklogPath(): string;
 		getTemplatePath(): string;
+		getSpheresPath(): string | undefined;
 	}
 
 	export class WeekManager {

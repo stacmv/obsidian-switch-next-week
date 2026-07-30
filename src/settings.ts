@@ -28,6 +28,7 @@ export interface SwitchNextWeekSettings {
 	weeksDir: string;
 	templatesDir: string;
 	backlogFile: string;
+	spheresFile: string;  // full vault-relative path to the sub-sphere model file; "" = feature off
 	weekEndDay: number;   // 0=Sunday … 6=Saturday
 	weekEndHour: number;  // 0–23
 	openFileAfterRun: boolean;
@@ -37,6 +38,7 @@ export const DEFAULT_SETTINGS: SwitchNextWeekSettings = {
 	weeksDir: "weeks",
 	templatesDir: "templates",
 	backlogFile: "backlog.md",
+	spheresFile: "",
 	weekEndDay: 0,
 	weekEndHour: 20,
 	openFileAfterRun: true,
@@ -124,6 +126,23 @@ export class SwitchNextWeekSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.backlogFile)
 					.onChange(async (value) => {
 						this.plugin.settings.backlogFile = value.trim();
+						await saveValidated();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Sub-sphere model file")
+			.setDesc(
+				"Optional. Full vault path to the sub-sphere model file (e.g. @Strategy/Сферы и подсферы.md). " +
+				"Leave empty to disable sub-sphere routing. If the file is missing, run the " +
+				"\"Create sub-sphere model file\" command to generate a starter."
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("@Strategy/Сферы и подсферы.md")
+					.setValue(this.plugin.settings.spheresFile)
+					.onChange(async (value) => {
+						this.plugin.settings.spheresFile = value.trim();
 						await saveValidated();
 					})
 			);

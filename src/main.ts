@@ -1,7 +1,8 @@
-import { Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import { Notice, Plugin, TFile, WorkspaceLeaf, normalizePath } from "obsidian";
 import { SwitchNextWeekSettings, DEFAULT_SETTINGS, SwitchNextWeekSettingTab, validateSettings } from "./settings";
 import { WeekProtocolModal } from "./modal";
 import { ObsidianVaultFileSystem } from "./vault-fs";
+import { SPHERES_SCAFFOLD } from "./spheres-scaffold";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { ConfigManager, WeekManager, dateUtils } = require("switch-next-week/lib") as typeof import("switch-next-week/lib");
@@ -19,6 +20,12 @@ export default class SwitchNextWeekPlugin extends Plugin {
 			id: "run-week-protocol",
 			name: "Run week protocol",
 			callback: () => this.runProtocol(),
+		});
+
+		this.addCommand({
+			id: "create-spheres-scaffold",
+			name: "Create sub-sphere model file",
+			callback: () => this.createSpheresScaffold(),
 		});
 
 		this.addSettingTab(new SwitchNextWeekSettingTab(this.app, this));
@@ -46,11 +53,48 @@ export default class SwitchNextWeekPlugin extends Plugin {
 			weeklyFile:    tPrefix + "weekly.md",
 			calendarFile:  tPrefix + "calendar.md",
 			yearlyFile:    tPrefix + "yearly.md",
+			// Full vault path, used as-is (the library never joins it with weeksDir).
+			// undefined when empty so the sub-sphere feature stays off — the library
+			// has NO default filename for this option, and an empty prefix must not
+			// resolve to a truthy path that would silently enable it.
+			spheresFile: s.spheresFile ? s.spheresFile : undefined,
 			weekEndDay: s.weekEndDay,
 			weekEndHour: s.weekEndHour,
 			reportAutoGenerate: false, // reports.js uses fs.readFileSync — incompatible with browser
 			habitsEnabled: false,      // deferred to Phase 2
 		});
+	}
+
+	/** Write a starter sub-sphere model file at the configured path, if it doesn't exist yet. */
+	private async createSpheresScaffold() {
+		const path = this.settings.spheresFile.trim();
+		if (!path) {
+			new Notice("Switch Next Week: set the sub-sphere model file path in settings first.");
+			return;
+		}
+		try {
+			const fileSystem = new ObsidianVaultFileSystem(this.app);
+			if (await fileSystem.exists(path)) {
+				new Notice(`Switch Next Week: sub-sphere model file already exists — ${path}`);
+				await this.openVaultFile(path);
+				return;
+			}
+			await fileSystem.writeFile(path, SPHERES_SCAFFOLD);
+			new Notice(`Switch Next Week: created sub-sphere model file — ${path}`);
+			await this.openVaultFile(path);
+		} catch (e: unknown) {
+			const msg = e instanceof Error ? e.message : String(e);
+			new Notice(`Switch Next Week: could not create model file — ${msg}`);
+		}
+	}
+
+	/** Open a vault file by its vault-relative path in the most recent leaf. */
+	private async openVaultFile(filePath: string) {
+		const file = this.app.vault.getAbstractFileByPath(normalizePath(filePath));
+		if (!(file instanceof TFile)) return;
+		let leaf: WorkspaceLeaf | null = this.app.workspace.getMostRecentLeaf();
+		if (!leaf) leaf = this.app.workspace.getLeaf(true);
+		await leaf.openFile(file);
 	}
 
 	private async runProtocol() {
@@ -70,6 +114,18 @@ export default class SwitchNextWeekPlugin extends Plugin {
 		try {
 			const config = this.buildConfig();
 			const fileSystem = new ObsidianVaultFileSystem(this.app);
+
+			// Sub-sphere feature is opt-in: if a path is set but the file is missing,
+			// nudge the user toward the scaffold command. Non-blocking — the run
+			// proceeds with sub-sphere routing simply inactive this time.
+			const spheresPath = this.settings.spheresFile.trim();
+			if (spheresPath && !(await fileSystem.exists(spheresPath))) {
+				new Notice(
+					`Switch Next Week: sub-sphere model file not found (${spheresPath}). ` +
+					"Run \"Create sub-sphere model file\" to generate a starter."
+				);
+			}
+
 			const weekManager = new WeekManager(fileSystem, config);
 
 			const result = await weekManager.executeWeekProtocol(new Date());

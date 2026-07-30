@@ -163,6 +163,21 @@ describe("ObsidianVaultFileSystem", () => {
 			expect(files).toEqual([]);
 		});
 
+		it("is non-recursive — nested files are not listed (parity with NodeFileSystem)", async () => {
+			// The sub-sphere «Не назначено» merge scan relies on listFiles being
+			// non-recursive so an ARCHIVE_DIR nested under the weeks folder never
+			// leaks into the present-projects scan. Obsidian TFolder.children is
+			// already direct-children only; lock that in.
+			const app = makeApp({
+				"weeks/13.md": "",
+				"weeks/archive/2025/12.md": "",
+			});
+			const fs = new ObsidianVaultFileSystem(app as any);
+			const files = await fs.listFiles("weeks");
+			expect(files).toEqual(["13.md"]);
+			expect(files).not.toContain("12.md");
+		});
+
 		it("lists root files when given empty string", async () => {
 			const app = makeApp({ "template.md": "", "backlog.md": "" });
 			const fs = new ObsidianVaultFileSystem(app as any);
