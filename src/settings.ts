@@ -1,4 +1,4 @@
-import { AbstractInputSuggest, App, PluginSettingTab, Setting, TFolder } from "obsidian";
+import { AbstractInputSuggest, App, PluginSettingTab, Setting, TFile, TFolder } from "obsidian";
 import type SwitchNextWeekPlugin from "./main";
 
 class FolderSuggest extends AbstractInputSuggest<TFolder> {
@@ -19,6 +19,61 @@ class FolderSuggest extends AbstractInputSuggest<TFolder> {
 
 	selectSuggestion(folder: TFolder): void {
 		this.inputEl.value = folder.path;
+		this.inputEl.trigger("input");
+		this.close();
+	}
+}
+
+/**
+ * Autocomplete over markdown files in the vault.
+ *
+ * When `baseDir` is provided, suggestions are limited to files under that folder
+ * and the stored value is RELATIVE to it (so it round-trips with settings that
+ * prefix the weeks folder, like the backlog). Without `baseDir`, suggestions
+ * span the whole vault and the stored value is the full vault path (used by the
+ * sub-sphere model file, which typically lives outside the weeks folder).
+ */
+class FileSuggest extends AbstractInputSuggest<TFile> {
+	constructor(
+		app: App,
+		private inputEl: HTMLInputElement,
+		private baseDir?: () => string
+	) {
+		super(app, inputEl);
+	}
+
+	/** Normalized base folder; "" (also "." or unset) means the whole vault / full paths. */
+	private base(): string {
+		const b = (this.baseDir ? this.baseDir() : "").trim();
+		return b === "." ? "" : b.replace(/\/+$/, "");
+	}
+
+	/** Path as shown and stored: relative to base when set, otherwise the full vault path. */
+	private displayPath(file: TFile): string {
+		const base = this.base();
+		if (base && file.path.startsWith(base + "/")) {
+			return file.path.slice(base.length + 1);
+		}
+		return file.path;
+	}
+
+	getSuggestions(query: string): TFile[] {
+		const base = this.base();
+		const q = query.toLowerCase();
+		return this.app.vault
+			.getMarkdownFiles()
+			.filter((f) => (base ? f.path === base || f.path.startsWith(base + "/") : true))
+			.filter((f) => this.displayPath(f).toLowerCase().includes(q))
+			.sort((a, b) => this.displayPath(a).localeCompare(this.displayPath(b)))
+			.slice(0, 50);
+	}
+
+	renderSuggestion(file: TFile, el: HTMLElement): void {
+		el.setText(this.displayPath(file));
+	}
+
+	selectSuggestion(file: TFile): void {
+		this.inputEl.value = this.displayPath(file);
 		this.inputEl.trigger("input");
 		this.close();
 	}
@@ -120,15 +175,16 @@ export class SwitchNextWeekSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Backlog file")
 			.setDesc("Path within weeks folder for one-time task backlog (e.g. backlog.md)")
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder("backlog.md")
 					.setValue(this.plugin.settings.backlogFile)
 					.onChange(async (value) => {
 						this.plugin.settings.backlogFile = value.trim();
 						await saveValidated();
-					})
-			);
+					});
+				new FileSuggest(this.app, text.inputEl, () => this.plugin.settings.weeksDir);
+			});
 
 		new Setting(containerEl)
 			.setName("Sub-sphere model file")
@@ -137,15 +193,16 @@ export class SwitchNextWeekSettingTab extends PluginSettingTab {
 				"Leave empty to disable sub-sphere routing. If the file is missing, run the " +
 				"\"Create sub-sphere model file\" command to generate a starter."
 			)
-			.addText((text) =>
+			.addText((text) => {
 				text
 					.setPlaceholder("@Strategy/Сферы и подсферы.md")
 					.setValue(this.plugin.settings.spheresFile)
 					.onChange(async (value) => {
 						this.plugin.settings.spheresFile = value.trim();
 						await saveValidated();
-					})
-			);
+					});
+				new FileSuggest(this.app, text.inputEl);
+			});
 
 		new Setting(containerEl)
 			.setName("Week ends on")
