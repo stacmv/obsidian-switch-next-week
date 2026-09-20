@@ -45,6 +45,15 @@ esbuild.config.mjs # Build config (aliases path→path-browserify, fs→fs-stub)
 vitest.config.mts  # Test config (obsidian → test/obsidian-mock.ts)
 ```
 
+## Settings are per-device, not synced
+
+Plugin settings (`settings.ts`, incl. `weekEndHour`) live in `.obsidian/plugins/switch-next-week/data.json`,
+and `.obsidian/**` is excluded from the vault's s3-sync (`excludePatterns` in `obsidian-simple-s3-sync`).
+Each device keeps its own copy — a value changed on desktop does not reach the phone or vice versa.
+Confirmed incident (2026-09-08): desktop had `weekEndHour: 20`, phone had `21` — desktop considered the
+week finished an hour before the phone did. If a bug report only makes sense on one device, check
+whether the setting actually matches across devices before assuming a code bug.
+
 ## Coding Conventions
 
 - **PascalCase** for classes; **camelCase** for functions/properties; **UPPER_SNAKE_CASE** for constants
